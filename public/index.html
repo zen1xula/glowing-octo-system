@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sunrise GOS Helper</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0c0d10; --bg-1:#15171c; --bg-2:#1b1e25; --line:#2a2e37;
+    --text-hi:#eef0f3; --text-mid:#a8adb8; --text-lo:#666c78;
+    --amber:#e8a33d; --amber-dim:#8a6425; --blue:#5b8fd6; --red:#c8564a; --green:#5fae7d;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; margin:0;}
+  body{background:var(--bg-0); color:var(--text-hi); font-family:'Inter',sans-serif;}
+  .app{max-width:640px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; background:var(--bg-1);}
+  .titlebar{display:flex; align-items:center; gap:10px; padding:14px 16px; background:var(--bg-2); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5;}
+  .badge{width:22px;height:22px;border-radius:6px;background:linear-gradient(145deg,var(--amber),#b9762a);display:flex;align-items:center;justify-content:center;font-family:'Oswald';font-weight:700;font-size:12px;color:#1a1200;flex-shrink:0;}
+  .titlebar .name{font-family:'Oswald'; font-weight:600; font-size:15px;}
+  .titlebar .spacer{flex:1;}
+  .role-toggle{display:flex; background:var(--bg-1); border:1px solid var(--line); border-radius:20px; padding:2px;}
+  .role-toggle button{border:none; background:transparent; color:var(--text-lo); padding:6px 10px; border-radius:18px; cursor:pointer; font-size:11px; font-weight:600;}
+  .role-toggle button.active.citizen{background:var(--blue); color:#08101c;}
+  .role-toggle button.active.officer{background:var(--amber); color:#1a1200;}
+  .tabs{display:flex; gap:2px; padding:0 8px; background:var(--bg-1); border-bottom:1px solid var(--line); overflow-x:auto; position:sticky; top:53px; z-index:5;}
+  .tab{padding:11px 12px; font-family:'Oswald'; font-size:11.5px; font-weight:500; letter-spacing:.3px; text-transform:uppercase; color:var(--text-lo); cursor:pointer; border-bottom:2px solid transparent; white-space:nowrap;}
+  .tab.active{color:var(--amber); border-bottom-color:var(--amber);}
+  .body{flex:1;}
+  .view{padding:16px; display:none;}
+  .view.active{display:flex; flex-direction:column;}
+  .update-banner{display:none; align-items:center; gap:8px; background:rgba(232,163,61,.08); border:1px solid rgba(232,163,61,.25); border-radius:4px; padding:8px 12px; font-size:11.5px; color:var(--amber); margin-bottom:12px;}
+  .update-banner.show{display:flex;}
+  .sp-sm{width:10px;height:10px;border-radius:50%;border:2px solid rgba(232,163,61,.3); border-top-color:var(--amber); animation:spin .7s linear infinite; flex-shrink:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .search-row{display:flex; gap:8px;}
+  .search-input{flex:1; background:var(--bg-2); border:1px solid var(--line); color:var(--text-hi); padding:12px 13px; border-radius:4px; font-size:14px; outline:none;}
+  .ask-btn{background:var(--amber); color:#1a1200; border:none; border-radius:4px; padding:0 16px; font-family:'Oswald'; font-weight:600; font-size:12px; cursor:pointer; text-transform:uppercase;}
+  .ask-btn:disabled{opacity:.5;}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;}
+  .chip{padding:6px 12px; border-radius:20px; border:1px solid var(--line); background:var(--bg-2); color:var(--text-mid); font-size:11.5px; font-family:'JetBrains Mono'; cursor:pointer;}
+  .chip.active{background:var(--amber); color:#1a1200; border-color:var(--amber); font-weight:600;}
+  .results{margin-top:14px; display:flex; flex-direction:column; gap:10px;}
+  .empty-state{display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:var(--text-lo); gap:8px; padding:50px 20px;}
+  .empty-state .glyph{font-size:26px; opacity:.5;}
+  .card{background:var(--bg-2); border:1px solid var(--line); border-radius:4px; padding:13px 14px; border-left:2px solid var(--line);}
+  .card-head{display:flex; align-items:center; gap:8px; margin-bottom:4px;}
+  .art-num{font-family:'JetBrains Mono'; font-size:12px; color:var(--amber); font-weight:600;}
+  .art-code{font-size:10px; color:var(--text-lo); background:rgba(255,255,255,.05); padding:2px 6px; border-radius:10px; font-family:'JetBrains Mono';}
+  .art-title{font-weight:600; font-size:13.5px; margin:2px 0 6px;}
+  .art-text{font-size:12.5px; line-height:1.55; color:var(--text-mid); white-space:pre-wrap;}
+  .card-actions{display:flex; gap:12px; margin-top:8px;}
+  .card-actions button{background:none; border:none; color:var(--text-lo); font-size:11px; cursor:pointer; padding:0;}
+  .ai-block{background:linear-gradient(180deg, rgba(232,163,61,.07), rgba(232,163,61,.02)); border:1px solid rgba(232,163,61,.25); border-radius:5px; padding:14px 15px; margin-bottom:12px;}
+  .ai-head{display:flex; align-items:center; gap:7px; margin-bottom:9px;}
+  .ai-head .dot{width:6px;height:6px;border-radius:50%; background:var(--amber);}
+  .ai-head span{font-family:'Oswald'; font-size:11.5px; letter-spacing:.6px; text-transform:uppercase; color:var(--amber); font-weight:600;}
+  .ai-content{font-size:13px; line-height:1.65; white-space:pre-wrap;}
+  .ai-loading{display:flex; gap:5px; align-items:center; color:var(--text-lo); font-size:12px;}
+  .codex-list{display:flex; flex-direction:column; gap:8px;}
+  .codex-item{background:var(--bg-2); border:1px solid var(--line); border-radius:4px; padding:12px 14px; cursor:pointer; display:flex; align-items:center; justify-content:space-between;}
+  .codex-name{font-weight:600; font-size:13px;}
+  .codex-meta{font-size:11px; color:var(--text-lo); margin-top:2px; font-family:'JetBrains Mono';}
+  .auto-tag{font-size:9px; color:var(--green); border:1px solid rgba(95,174,125,.35); padding:1px 6px; border-radius:10px; margin-left:6px;}
+  .back-link{color:var(--amber); font-size:12px; cursor:pointer; margin-bottom:12px; display:inline-flex; gap:5px; width:fit-content;}
+  .article-list{display:flex; flex-direction:column; gap:8px;}
+  .note-add{display:flex; gap:8px;}
+  .text-field{background:var(--bg-2); border:1px solid var(--line); color:var(--text-hi); padding:10px 12px; border-radius:4px; font-size:13.5px; outline:none;}
+  .note-list{display:flex; flex-direction:column; gap:8px; margin-top:12px;}
+  .note-item{background:var(--bg-2); border:1px solid var(--line); border-radius:4px; padding:11px 13px; display:flex; justify-content:space-between; gap:10px;}
+  .note-item .txt{font-size:12.5px; color:var(--text-mid); white-space:pre-wrap;}
+  .note-item .del{color:var(--text-lo); cursor:pointer; font-size:12px;}
+  .primary-btn{background:var(--amber); color:#1a1200; border:none; border-radius:4px; padding:10px 16px; font-family:'Oswald'; font-weight:600; font-size:12.5px; text-transform:uppercase; cursor:pointer; align-self:flex-start;}
+  .secondary-btn{background:var(--bg-2); color:var(--text-hi); border:1px solid var(--line); border-radius:4px; padding:9px 15px; font-family:'Oswald'; font-weight:600; font-size:12px; text-transform:uppercase; cursor:pointer; align-self:flex-start;}
+  .hint{font-size:11.5px; color:var(--text-lo); line-height:1.6;}
+  .statusbar{padding:9px 16px; border-top:1px solid var(--line); background:var(--bg-2); font-size:10.5px; color:var(--text-lo); font-family:'JetBrains Mono'; display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px;}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="titlebar">
+    <div class="badge">S</div>
+    <div class="name">Sunrise GOS Helper</div>
+    <div class="spacer"></div>
+    <div class="role-toggle" id="roleToggle">
+      <button class="citizen" data-role="citizen">Гражданин</button>
+      <button class="officer" data-role="officer">Сотрудник</button>
+    </div>
+  </div>
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-view="search">Поиск</div>
+    <div class="tab" data-view="codex">Кодексы</div>
+    <div class="tab" data-view="favorites">Избранное</div>
+    <div class="tab" data-view="notes">Заметки</div>
+    <div class="tab" data-view="faq">FAQ</div>
+  </div>
+  <div class="body">
+    <div class="view active" id="view-search">
+      <div class="update-banner" id="updateBanner"><div class="sp-sm"></div><span id="updateBannerText">Обновляю базу...</span></div>
+      <div class="search-row">
+        <input class="search-input" id="searchInput" placeholder="Задержали по статье 17.1, что делать?">
+        <button class="ask-btn" id="askBtn">Спросить ИИ</button>
+      </div>
+      <div class="chips" id="chips"></div>
+      <div class="results" id="results"><div class="empty-state"><div class="glyph">⚖</div><div>Загружаю базу законов...</div></div></div>
+    </div>
+    <div class="view" id="view-codex">
+      <button class="secondary-btn" id="manualUpdateBtn" style="margin-bottom:12px;">Обновить сейчас</button>
+      <div id="codexRoot"></div>
+    </div>
+    <div class="view" id="view-favorites"><div id="favRoot"></div></div>
+    <div class="view" id="view-notes">
+      <div class="note-add">
+        <input class="text-field" id="noteInput" style="flex:1;" placeholder="Новая заметка...">
+        <button class="primary-btn" id="addNoteBtn" style="align-self:auto;">+</button>
+      </div>
+      <div class="note-list" id="noteList"></div>
+    </div>
+    <div class="view" id="view-faq">
+      <div class="hint" style="font-size:12.5px; line-height:1.8;">
+        <b>Автообновление:</b> сервер сам подтягивает свежие тексты кодексов с форума Sunrise по расписанию — открывать приложение для этого не нужно, данные всегда актуальны на момент захода.<br><br>
+        <b>ИИ-поиск:</b> находит подходящие статьи и объясняет ситуацию — гражданину права и защиту, сотруднику порядок действий.<br><br>
+        <b>Избранное и заметки</b> хранятся в этом браузере на этом телефоне.
+      </div>
+    </div>
+  </div>
+  <div class="statusbar">
+    <span id="statusLeft">кодексов: 0 · статей: 0</span>
+    <span id="statusRight">обновлено: —</span>
+  </div>
+</div>
+
+<script>
+const state = { codexes: [], favorites: JSON.parse(localStorage.getItem('favorites')||'[]'), notes: JSON.parse(localStorage.getItem('notes')||'[]'), role: localStorage.getItem('role')||'citizen' };
+
+async function loadCodexes(){
+  const r = await fetch('/api/codexes').then(r=>r.json());
+  state.codexes = r.codexes || [];
+  if(r.lastRun) document.getElementById('statusRight').textContent = 'обновлено: ' + new Date(r.lastRun.ranAt).toLocaleString('ru-RU');
+  renderChips(); renderResults([]); renderStatus();
+}
+
+const banner = document.getElementById('updateBanner');
+async function refreshNow(showBanner){
+  if(showBanner){ banner.classList.add('show'); document.getElementById('updateBannerText').textContent = 'Обновляю базу законов...'; }
+  const results = await fetch('/api/refresh', {method:'POST'}).then(r=>r.json());
+  if(showBanner){
+    document.getElementById('updateBannerText').textContent = `Обновлено: ${results.ok?.length||0}${results.failed?.length? ', ошибок: '+results.failed.length : ''}`;
+    setTimeout(()=> banner.classList.remove('show'), 3000);
+  }
+  await loadCodexes();
+}
+document.getElementById('manualUpdateBtn').addEventListener('click', ()=> refreshNow(true));
+
+// ---------- Tabs ----------
+document.getElementById('tabs').addEventListener('click', (e)=>{
+  const tab = e.target.closest('.tab'); if(!tab) return;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('view-'+tab.dataset.view).classList.add('active');
+  if(tab.dataset.view==='codex') renderCodexList();
+  if(tab.dataset.view==='favorites') renderFavorites();
+});
+
+// ---------- Role ----------
+document.getElementById('roleToggle').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  state.role = btn.dataset.role; localStorage.setItem('role', state.role);
+  document.querySelectorAll('.role-toggle button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+});
+
+// ---------- Search ----------
+let activeChip = 'Все';
+function renderChips(){
+  const codes = ['Все', ...new Set(state.codexes.map(c=>c.code))];
+  document.getElementById('chips').innerHTML = codes.map(c=>`<div class="chip ${c===activeChip?'active':''}" data-chip="${c}">${c}</div>`).join('');
+}
+document.getElementById('chips').addEventListener('click', (e)=>{
+  const chip = e.target.closest('.chip'); if(!chip) return;
+  activeChip = chip.dataset.chip; renderChips();
+});
+function allArticles(){
+  let list = [];
+  state.codexes.forEach(c=>{
+    if(activeChip!=='Все' && c.code!==activeChip) return;
+    c.articles.forEach(a=> list.push({...a, codexId:c.id, codexName:c.name, codexCode:c.code}));
+  });
+  return list;
+}
+function scoreArticle(a, words, rawQuery){
+  let score = 0;
+  const hay = (a.num+' '+a.title+' '+a.text).toLowerCase();
+  if(rawQuery && a.num === rawQuery.replace(/^ст(атья)?\.?\s*/i,'').trim()) score += 50;
+  words.forEach(w=>{ if(w.length>2 && hay.includes(w)) score += (a.title.toLowerCase().includes(w) ? 3 : 1); });
+  return score;
+}
+function searchArticles(query){
+  const q = query.trim().toLowerCase(); if(!q) return [];
+  const words = q.split(/\s+/);
+  return allArticles().map(a=>({a, s:scoreArticle(a, words, q)})).filter(x=>x.s>0).sort((x,y)=>y.s-x.s).slice(0,6).map(x=>x.a);
+}
+function escapeHtml(s){ return s.replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function articleCardHtml(a){
+  const isFav = state.favorites.some(f=>f.codexId===a.codexId && f.num===a.num);
+  return `<div class="card" data-codex="${a.codexId}" data-num="${a.num}">
+    <div class="card-head"><span class="art-num">Ст. ${a.num}</span><span class="art-code">${a.codexCode}</span></div>
+    <div class="art-title">${escapeHtml(a.title)}</div>
+    <div class="art-text">${escapeHtml(a.text.slice(0,420))}${a.text.length>420?'…':''}</div>
+    <div class="card-actions"><button class="fav-btn">${isFav?'★ в избранном':'☆ в избранное'}</button></div>
+  </div>`;
+}
+function renderResults(matches, aiHtml){
+  const el = document.getElementById('results');
+  if(matches.length===0 && !aiHtml){
+    el.innerHTML = state.codexes.length===0
+      ? `<div class="empty-state"><div class="glyph">⏳</div><div>База ещё загружается на сервере, подожди немного и обнови вкладку «Кодексы».</div></div>`
+      : `<div class="empty-state"><div class="glyph">🔍</div><div>Ничего не найдено. Попробуй другой запрос или номер статьи.</div></div>`;
+    return;
+  }
+  el.innerHTML = (aiHtml || '') + matches.map(a=>articleCardHtml(a)).join('');
+  el.querySelectorAll('.card').forEach(card=> card.querySelector('.fav-btn').addEventListener('click', ()=> toggleFavorite(card.dataset.codex, card.dataset.num)));
+}
+function toggleFavorite(codexId, num){
+  const idx = state.favorites.findIndex(f=>f.codexId===codexId && f.num===num);
+  if(idx>=0) state.favorites.splice(idx,1); else state.favorites.push({codexId, num});
+  localStorage.setItem('favorites', JSON.stringify(state.favorites));
+  renderResults(searchArticles(document.getElementById('searchInput').value));
+  renderFavorites();
+}
+document.getElementById('searchInput').addEventListener('input', (e)=> renderResults(searchArticles(e.target.value)));
+
+// ---------- AI ask ----------
+document.getElementById('askBtn').addEventListener('click', async ()=>{
+  const query = document.getElementById('searchInput').value.trim(); if(!query) return;
+  const matches = searchArticles(query);
+  const btn = document.getElementById('askBtn'); btn.disabled = true;
+  renderResults(matches, `<div class="ai-block"><div class="ai-head"><div class="dot"></div><span>ИИ-помощник</span></div><div class="ai-loading"><div class="sp-sm"></div>Анализирую...</div></div>`);
+  if(matches.length===0){
+    renderResults(matches, `<div class="ai-block"><div class="ai-head"><div class="dot"></div><span>ИИ-помощник</span></div><div class="ai-content">В базе нет статей под этот запрос.</div></div>`);
+    btn.disabled=false; return;
+  }
+  const context = matches.map(a=>`[${a.codexCode}] Статья ${a.num}. ${a.title}\n${a.text}`).join('\n\n---\n\n');
+  const roleInstruction = state.role === 'citizen'
+    ? 'Пользователь — обычный гражданин на RP-сервере. Объясни простыми словами, что означает статья, какие у него права, и как выстроить защиту.'
+    : 'Пользователь — государственный сотрудник на RP-сервере. Объясни порядок действий по регламенту.';
+  const systemPrompt = `Ты — юридический ассистент внутри приложения для GTA5 RP сервера Sunrise. Отвечай только на основе предоставленных статей, кратко, на русском, без markdown. ${roleInstruction} Если статей недостаточно — прямо скажи об этом.`;
+  const result = await fetch('/api/ask', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({systemPrompt, userContent: `Запрос игрока: "${query}"\n\nНайденные статьи:\n\n${context}`})}).then(r=>r.json());
+  const html = result.error
+    ? `<div class="ai-block"><div class="ai-head"><div class="dot"></div><span>ИИ-помощник</span></div><div class="ai-content">Ошибка: ${escapeHtml(result.error)}</div></div>`
+    : `<div class="ai-block"><div class="ai-head"><div class="dot"></div><span>ИИ-помощник</span></div><div class="ai-content">${escapeHtml(result.text)}</div></div>`;
+  renderResults(matches, html);
+  btn.disabled = false;
+});
+
+// ---------- Codex browser ----------
+function renderCodexList(){
+  const root = document.getElementById('codexRoot');
+  if(state.codexes.length===0){ root.innerHTML = `<div class="empty-state"><div class="glyph">📖</div><div>База ещё загружается...</div></div>`; return; }
+  root.innerHTML = `<div class="codex-list">` + state.codexes.map(c=>`
+    <div class="codex-item" data-id="${c.id}">
+      <div><div class="codex-name">${escapeHtml(c.name)}${c.auto?'<span class="auto-tag">авто</span>':''}</div>
+      <div class="codex-meta">${c.code} · ${c.articles.length} статей · ${new Date(c.updatedAt).toLocaleDateString('ru-RU')}</div></div>
+      <div>›</div>
+    </div>`).join('') + `</div>`;
+  root.querySelectorAll('.codex-item').forEach(item=> item.addEventListener('click', ()=> renderCodexArticles(item.dataset.id)));
+}
+function renderCodexArticles(id){
+  const codex = state.codexes.find(c=>c.id===id);
+  const root = document.getElementById('codexRoot');
+  root.innerHTML = `<div class="back-link" id="backToList">← Все кодексы</div><div class="article-list">` +
+    codex.articles.map(a=>articleCardHtml({...a, codexId:codex.id, codexCode:codex.code})).join('') + `</div>`;
+  document.getElementById('backToList').addEventListener('click', renderCodexList);
+  root.querySelectorAll('.card').forEach(card=> card.querySelector('.fav-btn').addEventListener('click', ()=> toggleFavorite(card.dataset.codex, card.dataset.num)));
+}
+
+// ---------- Favorites ----------
+function renderFavorites(){
+  const root = document.getElementById('favRoot');
+  if(state.favorites.length===0){ root.innerHTML = `<div class="empty-state"><div class="glyph">☆</div><div>Пока нет избранных статей.</div></div>`; return; }
+  const items = state.favorites.map(f=>{
+    const codex = state.codexes.find(c=>c.id===f.codexId); if(!codex) return null;
+    const a = codex.articles.find(x=>x.num===f.num); if(!a) return null;
+    return {...a, codexId: codex.id, codexCode: codex.code};
+  }).filter(Boolean);
+  root.innerHTML = `<div class="article-list">` + items.map(a=>articleCardHtml(a)).join('') + `</div>`;
+  root.querySelectorAll('.card').forEach(card=> card.querySelector('.fav-btn').addEventListener('click', ()=> toggleFavorite(card.dataset.codex, card.dataset.num)));
+}
+
+// ---------- Notes ----------
+function renderNotes(){
+  const root = document.getElementById('noteList');
+  if(state.notes.length===0){ root.innerHTML = `<div class="empty-state"><div class="glyph">✎</div><div>Заметок пока нет.</div></div>`; return; }
+  root.innerHTML = state.notes.map(n=>`<div class="note-item" data-id="${n.id}"><div class="txt">${escapeHtml(n.text)}</div><div class="del">✕</div></div>`).join('');
+  root.querySelectorAll('.note-item .del').forEach(btn=> btn.addEventListener('click', (e)=>{
+    const id = e.target.closest('.note-item').dataset.id;
+    state.notes = state.notes.filter(n=>n.id!==id);
+    localStorage.setItem('notes', JSON.stringify(state.notes)); renderNotes();
+  }));
+}
+document.getElementById('addNoteBtn').addEventListener('click', ()=>{
+  const input = document.getElementById('noteInput'); if(!input.value.trim()) return;
+  state.notes.unshift({id:'n'+Date.now(), text: input.value.trim()});
+  localStorage.setItem('notes', JSON.stringify(state.notes));
+  input.value=''; renderNotes();
+});
+
+function renderStatus(){
+  document.getElementById('statusLeft').textContent = `кодексов: ${state.codexes.length} · статей: ${state.codexes.reduce((s,c)=>s+c.articles.length,0)}`;
+}
+
+document.querySelectorAll('.role-toggle button').forEach(b=> b.classList.toggle('active', b.dataset.role===state.role));
+renderNotes(); renderFavorites();
+loadCodexes();
+</script>
+</body>
+</html>
