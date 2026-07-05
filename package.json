@@ -1,0 +1,15 @@
+{
+  "name": "sunrise-gos-helper-web",
+  "version": "1.0.0",
+  "description": "Мобильный веб-помощник для GOS Sunrise с автообновляемой базой законов",
+  "main": "server.js",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cheerio": "^1.0.0",
+    "node-fetch": "^2.7.0"
+  }
+}
